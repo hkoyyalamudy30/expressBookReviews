@@ -3,6 +3,7 @@ let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
+const axios = require("axios");
 
 
 public_users.post("/register", (req,res) => {
@@ -105,6 +106,67 @@ public_users.get('/review/:isbn',function (req, res) {
 
   res.setHeader('Content-Type', 'application/json');
   return res.status(200).send(JSON.stringify(book.reviews || {}, null, 2));
+});
+
+public_users.get("/books/async", async function (req, res) {
+  try {
+    const baseUrl = `${req.protocol}://${req.get("host")}/`;
+    const response = await axios.get(baseUrl);
+    res.setHeader("Content-Type", "application/json");
+    return res.status(200).send(JSON.stringify(response.data, null, 2));
+  } catch (err) {
+    return res.status(500).json({ message: "failed to fetch books" });
+  }
+});
+
+
+public_users.get("/isbn/:isbn/async", async function (req, res) {
+  try {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const { isbn } = req.params;
+
+    // call the existing sync route made in task 2
+    const response = await axios.get(`${baseUrl}/isbn/${isbn}`);
+
+    res.setHeader("Content-Type", "application/json");
+    return res.status(200).send(JSON.stringify(response.data, null, 2));
+  } catch (err) {
+    if (err.response) {
+      return res.status(err.response.status).json(err.response.data);
+    }
+    return res.status(500).json({ message: "failed to fetch book" });
+  }
+});
+
+
+public_users.get("/author/:author/async", async function (req, res) {
+  try {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const author = encodeURIComponent(req.params.author);
+    const response = await axios.get(`${baseUrl}/author/${author}`);
+    res.setHeader("Content-Type", "application/json");
+    return res.status(200).send(JSON.stringify(response.data, null, 2));
+  } catch (err) {
+    if (err.response) {
+      return res.status(err.response.status).json(err.response.data);
+    }
+    return res.status(500).json({ message: "failed to fetch author books" });
+  }
+});
+
+public_users.get("/title/:title/async", async function (req, res) {
+  try {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const title = encodeURIComponent(req.params.title);
+    const response = await axios.get(`${baseUrl}/title/${title}`);
+    res.setHeader("Content-Type", "application/json");
+    return res.status(200).send(JSON.stringify(response.data, null, 2));
+  } catch (err) {
+    if (err.response) {
+      return res.status(err.response.status).json(err.response.data);
+    }
+    return res.status(500).json({ message: "failed to fetch title books" });
+  }
 });
 
 module.exports.general = public_users;
